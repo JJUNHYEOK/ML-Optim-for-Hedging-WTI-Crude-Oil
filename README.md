@@ -149,3 +149,5 @@ pip install cvxpy lightgbm pyepo scikit-learn pandas numpy matplotlib seaborn st
 - Elmachtoub, A. N., & Grigas, P. (2022). *Smart "Predict, then Optimize"*. Management Science.
 - Conformal prediction for the newsvendor problem, arXiv:2412.13159.
 - World Bank Commodity Markets Outlook — forecasting limitations for commodity prices.
+
+*Developed by **Pervengers** during the Purdue Academy for Global Engineering(PAGE) 2026*
