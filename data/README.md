@@ -1,52 +1,52 @@
-# 데이터셋 설명 (2026-07 기준)
+# Dataset Description (as of 2026-07)
 
-## 1. 데이터셋 전처리
+## 1. Preprocessing
 
-- **원본**: WTI 일별 데이터
-- **최종 기간**: 2007-05-14 ~ 2026-02-28
-  - 시작일: OVX(변동성 지수)가 이 시점 전까지는 더미값(27.09 고정)이라 실제 지수가 시작되는 첫 정상 거래일부터 사용
-  - 종료일: 2026-03부터 일간 변동성이 평소 대비 3배, OVX가 COVID 위기 수준(70~95)으로 수개월 지속, 파일 마지막 며칠은 가격이 완전히 동결되는 등 데이터 품질 이상이 발견되어 그 이전까지만 사용
-- **공휴일 제거**: 현물·선물 가격이 동시에 전날과 동일한 행(휴장일)을 200건 제거
-- **월별 지표 lag 처리**: Supply Chain Pressure(공급망압력지수)는 다른 변수와 달리 월 1회만 갱신되는데, 원본에서 그 달 말일에 값이 갱신되는 패턴이라 그대로 쓰면 아직 발표 안 됐을 정보가 새어 들어감 → 월말 확정값을 한 달 지연시켜 사용 (1,530행 값 조정, 초반 13행은 이전 달 정보가 없어 결측)
-- **파일**: `WTI_daily_preprocessed.csv`
+- **Source**: WTI daily data
+- **Final date range**: 2007-05-14 ~ 2026-02-28
+  - Start date: OVX (volatility index) is a placeholder constant (27.09) before this point, so we start at the first normal trading day once the real index begins
+  - End date: from 2026-03 onward, daily volatility is ~3x normal, OVX stays at COVID-crisis levels (70-95) for months, and the last few days of the file have prices completely frozen — data quality breaks down, so we cut it off before that
+- **Holiday removal**: dropped 200 rows where spot and futures prices are both unchanged from the previous day (market closed)
+- **Monthly-indicator lag**: Supply Chain Pressure updates only once a month, unlike the other variables, and in the raw data the new value appears on the last day of the month it describes — using it as-is would leak information that hasn't actually been published yet. Fixed by delaying the finalized month-end value by one month (1,530 rows adjusted; the first 13 rows are missing since there's no prior month to reference yet)
+- **File**: `WTI_daily_preprocessed.csv`
 
 ## 2. Feature Engineering
 
-**원칙**: 타겟이 "21거래일(약 1개월) 뒤 수익률"이기 때문에, feature도 5일(1주)/21일(1개월)/63일(1분기) 창으로 묶어서 계산. 하루짜리 스냅샷 값은 사전 실험에서 예측력이 거의 0으로 확인되어 사용하지 않음.
+**Principle**: since the target is "return 21 trading days (~1 month) ahead," features are also aggregated over 5-day (1 week) / 21-day (1 month) / 63-day (1 quarter) windows. Single-day snapshot values were tested beforehand and had almost no predictive power, so they're not used.
 
-총 **26개 feature**, 원본 6개 변수 + 원유가격 자체 + 계절성으로 구성:
+**26 features** total, built from the 6 raw variables + the oil price itself + seasonality:
 
-| feature | 내용 | 추가 이유 |
+| feature | what it is | why it's included |
 |---|---|---|
-| `Spot_mom_5/21/63d` | 원유 가격 자체의 과거 수익률 | 가장 기본적인 자기 모멘텀 |
-| `OVX_mean_5/21/63d` | 변동성 지수 평균 수준 | 지금 시장이 얼마나 불안한 상태인지. 타겟과 상관관계 가장 높음 (0.20~0.21) |
-| `OVX_chg_5/21/63d` | 변동성 지수 변화량 | 변동성이 오르는 중인지 여부 |
-| `DXY_chg_5/21/63d` | 달러인덱스 변화량 | 원유는 달러 표시 자산 → 달러 강세와 원유 약세는 역상관 관계 |
-| `Basis_chg_5/21/63d` | (현물-선물) 스프레드 변화량 | 콘탱고/백워데이션 변화 = 수급 불균형 신호 |
-| `Yield_Curve_chg_5/21/63d` | 장단기 금리차 변화량 | 경기침체 신호 → 원유 수요 전망과 간접 연결 |
-| `GPR_mean_5/21/63d` | 지정학 리스크 평균 수준 | 공급 충격 리스크 반영 |
-| `SCP_mean_5/21/63d` | 공급망 압력 평균 수준 | 공급 병목 정도 반영 |
-| `month_sin`, `month_cos` | 월을 원형으로 인코딩 | 계절성(드라이빙 시즌 등) 표현 |
+| `Spot_mom_5/21/63d` | oil price's own past return | the most basic self-momentum |
+| `OVX_mean_5/21/63d` | average volatility level | how anxious the market currently is. Highest correlation with the target (0.20-0.21) |
+| `OVX_chg_5/21/63d` | change in volatility | whether volatility is rising |
+| `DXY_chg_5/21/63d` | change in the dollar index | oil is dollar-denominated → dollar strength and oil weakness tend to move inversely |
+| `Basis_chg_5/21/63d` | change in the (spot-futures) spread | contango/backwardation shifts signal supply-demand imbalance |
+| `Yield_Curve_chg_5/21/63d` | change in the yield spread | recession signal → indirectly tied to oil demand outlook |
+| `GPR_mean_5/21/63d` | average geopolitical risk level | reflects supply-shock risk |
+| `SCP_mean_5/21/63d` | average supply-chain pressure level | reflects supply bottleneck severity |
+| `month_sin`, `month_cos` | month encoded on a circle | captures seasonality (e.g. driving season) |
 
-**주의**: 같은 변수의 5/21/63일 창끼리는 상관관계가 높음 (SCP 0.93~0.99, OVX 0.75~0.94, GPR 0.83~0.84) — 완전히 독립적인 정보는 아니고, Lasso 계열 모델이 이 중복을 자동으로 걸러줄 것으로 기대함.
+**Note**: the 5/21/63-day windows of the same variable are highly correlated with each other (SCP 0.93-0.99, OVX 0.75-0.94, GPR 0.83-0.84) — they're not fully independent information, and Lasso-family models are expected to prune this redundancy automatically.
 
-**파일**: `WTI_daily_features.csv`
+**File**: `WTI_daily_features.csv`
 
 ## 3. Train / Val / Test
 
-- **비율**: 65 / 15 / 20
-- **분할 경계마다 63거래일 gap** — feature가 최대 63일치 과거를, 타겟이 21일치 미래를 보기 때문에, gap 없이 자르면 경계 근처 행이 양쪽으로 정보를 흘림
+- **Ratio**: 65 / 15 / 20
+- **63-trading-day gap at each split boundary** — features look back up to 63 days and the target looks forward 21 days, so cutting without a gap would leak information across the boundary in both directions
 
-| split | 기간 | 행 수 | 위기구간 비율 |
+| split | period | rows | share of crisis-regime rows |
 |---|---|---|---|
 | train | 2007-08 ~ 2019-08 | 3,012 (65%) | 10.1% |
 | val | 2019-11 ~ 2022-08 | 695 (15%) | 25.0% |
 | test | 2022-11 ~ 2026-01 | 801 (17%) | 1.9% |
 
-**주의**: test 구간엔 고변동성(위기) 케이스가 거의 없음(1.9%) — 위기 상황 성능은 test만으로 판단하기 어렵고 val을 같이 봐야 함.
+**Note**: the test period has almost no high-volatility (crisis) cases (1.9%) — crisis-regime performance is hard to judge from test alone, so check val too.
 
-**평가지표**: 방향적중률 + RMSE. 둘 다 **반드시 Random Walk 대비로 비교** (단독 숫자는 의미 없음).
+**Metrics**: direction accuracy + RMSE. Both must **always be compared against the random-walk baseline** (numbers on their own don't mean anything).
 
-**파일**: `WTI_daily_split.csv` (위 두 파일에 `split` 컬럼만 추가된 최종본)
+**File**: `WTI_daily_split.csv` (the final version — the two files above plus a `split` column)
 
-이 데이터가 어떻게 만들어졌는지 궁금하면 `src/feature_engineering_daily.py`, `src/split_daily.py`를 참고. 전처리 자체(공휴일 제거, SCP lag)를 만든 스크립트는 원본 개발 repo에만 있음 — 이 repo엔 재실행에 필요한 원본 파일이 없어서 포함하지 않음.
+For how this dataset was built, see `src/feature_engineering_daily.py` and `src/split_daily.py`. The script that did the raw preprocessing itself (holiday removal, SCP lag) only exists in the original development repo — it's not included here since the source file it needs to re-run isn't present in this repo.
