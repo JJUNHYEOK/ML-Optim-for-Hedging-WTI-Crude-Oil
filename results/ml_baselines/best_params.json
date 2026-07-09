@@ -1,0 +1,40 @@
+{
+  "ridge_optuna": {
+    "alpha": 994.9903751754355
+  },
+  "rf_optuna": {
+    "n_estimators": 700,
+    "max_depth": 3,
+    "min_samples_leaf": 50,
+    "max_features": 0.9463952956789902
+  },
+  "xgb_optuna": {
+    "n_estimators": 500,
+    "max_depth": 3,
+    "learning_rate": 0.0017837001903237744,
+    "subsample": 0.7857916138930034,
+    "colsample_bytree": 0.7989991575759697,
+    "reg_lambda": 0.016099335804130033,
+    "reg_alpha": 4.976918341622148,
+    "min_child_weight": 17
+  },
+  "lgbm_optuna": {
+    "n_estimators": 700,
+    "num_leaves": 24,
+    "max_depth": 3,
+    "learning_rate": 0.0013048640216652323,
+    "subsample": 0.8031162847963476,
+    "colsample_bytree": 0.939258928159201,
+    "reg_lambda": 0.4500417279662754,
+    "reg_alpha": 9.699663455745467,
+    "min_child_samples": 39
+  },
+  "catboost_optuna": {
+    "iterations": 200,
+    "depth": 10,
+    "learning_rate": 0.0016344347926119994,
+    "l2_leaf_reg": 5.298461562517745,
+    "bagging_temperature": 0.24180716363577048,
+    "random_strength": 5.323844964565651
+  }
+}
